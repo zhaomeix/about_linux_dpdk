@@ -1,0 +1,31 @@
+10.	Update mail sever git config
+cp /root/.gitconfig_youname /root/.gitconfig
+
+#1.	Update your code from git server by git pull
+ Git pull
+#2.	Changed your code
+3.	Add changed in your locale temporary storage
+git add ./filename
+4.	Submit changed in your locale git storage
+git commit –m “your comments”
+#5.	Update your comments 
+git commit –amend
+#6.	If you have many changes in different files, pls repeat 3-5
+7.	Build patch
+        git format-patch –X  --signoff --subject-prefix=’PATCH VX’
+                -X: X  means how many commit need to build patch.
+                VX: V it means version, X it means version number eg: V1 V2 V3
+8.	Edit your patch
+Pls edit your patches add [dts] in your patch subject:
+Eg:
+Subject: [dts][PATCH V1] fix skip case comments error
+11.	Send patch to yourself and check patch
+git send-email –to your_email_addr ./your-patch-folder/*.patch
+        meijuanx.zhao@intel.com
+12.	Send patch to dts.org 
+git send-email –to dts@dpdk.org ./your-patch-folder/*.patch
+13.	Trace your patch comments and stats until you received apply email form dts.org manager
+
+
+Git web: http://git-scm.com/book/en/v2/Git-Tools-Revision-Selection
+vm_testpmd setup location need in setup function;in common_base file,no RTE_LIBRTE_VHOST key word;close kvm fail

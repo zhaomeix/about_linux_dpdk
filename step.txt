@@ -1,0 +1,29 @@
+1.	Pls check scapy install path if has the gtp.py script, also attach my gtp.py
+/usr/lib/python2.7/site-packages/scapy/layers
+2.	Check /usr/lib/python2.7/site-packages/scapy/config.py if has below gtp
+              load_layers = ["l2", "inet", "dhcp", "dns", "dot11", "gprs", "tls",
+                   "hsrp", "inet6", "ir", "isakmp", "l2tp", "mgcp",
+                   "mobileip", "netbios", "netflow", "ntp", "ppp",
+                   "radius", "rip", "rtp", "skinny", "smb", "snmp",
+                   "tftp", "x509", "bluetooth", "dhcp6", "llmnr",
+                   "sctp", "vrrp", "ipsec", "lltd", "vxlan", "gtp"] 
+3.	Simple run scapy to check if your scapy is ready for GTP before run dts.
+[root@dpdk-test60 layers]# scapy
+INFO: Can't import PyX. Won't be able to use psdump() or pdfdump().
+WARNING: No route found for IPv6 destination :: (no default route?)
+Welcome to Scapy (2.3.3.dev623)
+>>> ls(GTP_U_Header)
+version    : BitField (3 bits)                   = (1)
+PT         : BitField (1 bit)                    = (1)
+reserved   : BitField (1 bit)                    = (0)
+E          : BitField (1 bit)                    = (0)
+S          : BitField (1 bit)                    = (0)
+PN         : BitField (1 bit)                    = (0)
+gtp_type   : ByteEnumField                       = (None)
+length     : ShortField                          = (None)
+teid       : IntField                            = (0)
+seq        : XBitField (Cond) (16 bits)          = (0)
+npdu       : ByteField (Cond)                    = (0)
+next_ex    : ByteEnumField (Cond)                = (0)
+
+????case???scapy?????

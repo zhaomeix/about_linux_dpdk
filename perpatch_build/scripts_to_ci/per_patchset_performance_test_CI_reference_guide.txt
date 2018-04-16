@@ -1,0 +1,216 @@
+# BSD LICENSE
+#
+# Copyright(c) 2010-2017 Intel Corporation. All rights reserved.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#   * Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions and the following disclaimer in
+#     the documentation and/or other materials provided with the
+#     distribution.
+#   * Neither the name of Intel Corporation nor the names of its
+#     contributors may be used to endorse or promote products derived
+#     from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+This document is to present the continuous integration deployment practice
+from Intel on the per patch set performance testing. 
+
+The purpose of patch set performance testing is to test each patch set's
+performance, check if there is regression and integrate the results into
+patchwork. 
+
+This document includes following parts:
+1. Prerequisites
+2. Work Flow
+3. Create Jenkins jobs
+4. Intel CI scripts
+
+
+Prerequisites
+=============
+
+You need one machine which installs Jenkins;
+One machine which can get source code, store scripts and store test results;
+One or more DUT to run performance testing.
+The machine which will get source code, it will be generate a dpdk.tar.gz.
+If DUT want to do testing, they must get the dpdk.tar.gz file.
+You can use the share strategy to share this dpdk.tar.gz to all DUT. You can
+also use ssh to copy dpdk.tar.gz to DUT.
+
+1. Install Jenkins: On RPM-based distributions, such as Red Hat Enterprise
+ Linux (RHEL), CentOS, Fedora or Scientific Linux, you can install Jenkins
+ through yum.
+2. Install neccessary plugins for patchset performance testing:
+      1) BuildResultTrigger Plug-in
+      2) Conditional BuildStep
+      3) Files Found Trigger
+      4) Multijob plugin
+      5) SSH Slaves plugin
+      6) SSH Credential Plugin
+      7) Parameterized Trigger plugin
+3. Create three nodes(machines) in Jenkins:
+      - source node: this node will get source code and store scripts.
+      - result node: This node will store all test results.
+      - tester node: This node will run performance testing.
+
+4. Get dpdk original repo to local :
+You can create a dpdk source code repository on your local server, which
+includes master branch, dpdk, dpdk-next-net, dpdk-next-crypto,
+dpdk-next-eventdev and dpdk-next-virtio. Pull these repoes from dpdk.org.
+
+
+CI Work Flow Introduction
+=========================
+
+Step 1. Download patch set from dpdk.org. 
+Step 2. Apply one patch set to latest dpdk repo(will go through master repo and all 
+	next-* repos). 
+Step 3. If applying patchset fails, then the build result will be marked as Failed, 
+	and the result will be related to the patchwork.
+Step 4. If applying patchset succeeds, then it will continue to trigger the 
+	peroformance test and send performance report to patchwork.
+Step 5. The result of performance test will be integrated to patchwork and showed on 
+	the first patch of the whole patch set. And if the performance test is failed,
+	then the result will be sent to the patch authors for the notification. 
+
+Related Jobs and scripts in Jenkins for each steps are as below: 
+
+Step 1. Jenkins job:　"Get-Patch-Sets"; script: download_patchset.py
+Step 2. Jenkins job "Apply-One-Patch-Set"; script: "apply-patchset.py" 
+Step 3. Jenkins job "DPDK-Send-Apply-Failed-Report"; script: N/A. 
+Step 4. Jenkins job "Apply-One-Patch-Set";script: performance test script.
+Step 5. Jenkins job "performance testing and send report" which includes 
+	"DPDK-Performance-Test" job and "DPDK-Send-Performance-Report" job.
+        These two jobs are running sequentially; Script "send_report.py".
+
+
+Details on Jenkins Jobs
+=======================
+
+1. Create "Get-Patch-Sets" job:
+   a. New items, enter an item name: "Get-Patch-Sets". Select
+      "Freestyle project" then press "OK";
+   b. Restrict where this project can be run, write the label of the created
+      host into Label Expression;
+   c. Build Triggers: Build periodically, Schedule is "H/20 * * * *";
+   d. Build: Runs a shell script (defaults to sh, but this is configurable)
+      for building the project. The script will be run with the workspace as the
+      current directory. Type in the contents of your shell script.
+      In this windows, use script download-patchset.py to download patchset from
+      dpdk.org.
+   e. This job works on source node.
+
+2. Create "Apply-One-Patch-Set" job:
+   a. New items, enter an item name: "Apply-One-Patch-Set". Select
+      "Freestyle project" then press "OK";
+   b. General: Restrict where this project can be run, write the label of the
+      created host into Label Expression;
+   c. General: Block Build when downstream project is building;
+   d. Build Triggers: Build periodically, Schedule is "H/30 * * * *";
+   e. Build: Runs a shell script (defaults to sh, but this is configurable)
+      for building the project. The script will be run with the workspace as the
+      current directory. Type in the contents of your shell script.
+      In this windows, use script apply_patchset.py to apply one patchset.
+   f. Add build step -> Conditional step(single). Run? is "File exists".
+      Fill the file name in "File". Base directory is "Workspace".
+      On evaluation failure is "Fail the build";
+   g. Add post-build action -> Trigger parameterized build on other projects.
+      Build Triggers -> Projects to build "performance testing and send report",
+      Trigger when build is "Stable or unstable but not failed".
+      checkout "Trigger build without parameters".
+   h. Add Parameters. Projects to build is "DPDK-Send-Apply-Failed-Reports",
+      Trigger when build is "Failed". checkout "Trigger build without parameters".
+   i. This job works on source node.
+
+3. Create "DPDK-Performance-Test"
+   a. New items, enter an item name: "DPDK Performance Test". Select
+      "Freestyle project" then press "OK";
+   b. General: Restrict where this project can be run, write the label of the
+      created host into Label Expression;
+   c. Build: Runs a shell script (defaults to sh, but this is configurable)
+      for building the project. The script will be run with the workspace as the
+      current directory. Type in the contents of your shell script.
+      In this windows, use script auto-regression.py to run performance testing.
+   d. This job works on test node.
+
+4. Create "DPDK-Send-Apply-Failed-Report"
+   a. New items, enter an item name: "DPDK-Send-Apply-Failed-Report".
+      Select "Freestyle project" then press "OK:
+   b. General: Restrict where this project can be run, write the label of the
+      created host into Label Expression
+   c. Build: Runs a shell script (defaults to sh, but this is configurable)
+      for building the project. The script will be run with the workspace as the
+      current directory. Type in the contents of your shell script.
+      In this windows, use script send-report.py.
+   d. This job works on source node.
+
+5. Create "DPDK-Send-Performance-Report" job
+   a. New items, enter an item name: "DPDK-Send-Performance-Report".
+      Select "Freestyle project" then press "OK";
+   b. General: Restrict where this project can be run, write the label of the
+      created host into Label Expression;
+   c. Build: Runs a shell script (defaults to sh, but this is configurable)
+      for building the project. The script will be run with the workspace as the
+      current directory. Type in the contents of your shell script.
+      In this windows, use script send-report.py to send performance report.
+   d. This job works on source node.
+
+6. Create "performance testing and send report" job
+   a. New items, enter an item name: "performance testing and send report".
+      Select "MultiJob Project" then press "OK";
+   b. Build -> MultiJob Phase: Phase name is the name you want to write.
+      Phase jobs -> Job, Job name is "DPDK-Performance-Test". Job execution type
+      is "Running phase jobs in parallel". Note: If you want to add more
+      performance testing environment, you can create these performance testing
+      jobs, then add them to this steps.
+   c. Add build step -> MultiJob Phase: hase name is the name you want to
+      write. Phase jobs -> Job, job name is "DPDK-Send-Performance-Report".
+      Job execution type is "Running phase jobs in sequentially".
+
+
+Introductions of Intel CI Scripts
+=================================
+
+Some example scripts for performance CI testing can be found in dpdk-ci repo via
+http://dpdk.org/browse/tools/dpdk-ci/
+Such as download_patchset.py, apply_one_patchset.py, send_report.py and etc.
+
+Intel_download_patchset.py:
+This script can download patchset and patchset information from patchwork. And
+store this patchset into a directory which named as
+"<the first patch id>-<the last patch id>".
+Usage:
+python download_patchset.py -p <the full path where you want to put the patchset in> \
+                            -b <the begin patch id> \
+		            -e <the end patch id>.
+If end patch id is 0, this script will get the latest one from patchwork.
+
+Intel_apply_patchset.py:
+This script can apply one patchset to correct repo, such as dpdk,
+dpdk-next-net, dpdk-next-virtio, dpdk-next-eventdev and dpdk-next-crypto.
+The subject prefix on the patches should provide the hint. If the majority of
+the patches start with "net/" then it's for next-net, and similarly for crypto.
+Patches with virtio or vhost go to that tree, etc.
+After apply patchset to correct repo, it will generate a dpdk.tar.gz.
+
+Intel_send_report.py:
+This script will parse the test results which are stored in a shared folder.
+Then send performance report to patchwork.
+
