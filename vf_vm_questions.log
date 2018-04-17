@@ -1,0 +1,6 @@
+no iommu_group found: No such file or directory
+
+vim /boot/grub2/grub.cfg    intel_iommu=on iommu=pt intel_pstate=disable
+
+
+iommu no found ?????bios

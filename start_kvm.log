@@ -1,0 +1,79 @@
+qemu-system-x86_64 -name vm1 -enable-kvm -pidfile /tmp/.vm1.pid \
+-daemonize -monitor unix:/tmp/vm1_monitor.sock,server,nowait \
+-serial telnet::7000,server,nowait \
+-net nic,vlan=0,macaddr=00:00:00:de:1a:b4,addr=1f \
+-net user,vlan=0,hostfwd=tcp::6000-:22 -cpu host \
+-smp 2 -m 1024 -object memory-backend-file,id=mem,size=1024M,mem-path=/dev/hugepages,share=on \
+-numa node,memdev=mem -mem-prealloc -vnc :2 -drive file=/home/image/sriov-fc25-0.img \
+-net user,vlan=1,hostfwd=tcp:10.240.176.207:6101-:22
+
+netdev' instead.netdev' instead.netdev' instead.netdev' instead.
+netdev' instead.
+
+
+test_vf_jumbo_withjumbo
+
+
+NIC statistics:                         																	              
+     rx_packets: 6
+     tx_packets: 15
+     rx_bytes: 2052
+     tx_bytes: 1490
+     tx_busy: 0
+     tx_restart_queue: 0
+     tx_timeout_count: 0
+     multicast: 0
+     rx_csum_offload_errors: 0
+     tx_queue_0_packets: 3
+     tx_queue_0_bytes: 498
+     tx_queue_0_bp_napi_yield: 0
+     tx_queue_0_bp_misses: 0
+     tx_queue_0_bp_cleaned: 0
+     tx_queue_1_packets: 12
+     tx_queue_1_bytes: 992
+     tx_queue_1_bp_napi_yield: 0
+     tx_queue_1_bp_misses: 0
+     tx_queue_1_bp_cleaned: 0
+     rx_queue_0_packets: 6
+     rx_queue_0_bytes: 2052
+     rx_queue_0_bp_poll_yield: 0
+     rx_queue_0_bp_misses: 0
+     rx_queue_0_bp_cleaned: 0
+     rx_queue_1_packets: 0
+     rx_queue_1_bytes: 0
+     rx_queue_1_bp_poll_yield: 0
+     rx_queue_1_bp_misses: 0
+     rx_queue_1_bp_cleaned: 0
+	 
+	 
+	 
+	 
+	 NIC statistics:
+     rx_bytes: 0
+     rx_unicast: 0
+     rx_multicast: 0
+     rx_broadcast: 0
+     rx_discards: 0
+     rx_unknown_protocol: 0
+     tx_bytes: 140
+     tx_unicast: 0
+     tx_multicast: 2
+     tx_broadcast: 0
+     tx_discards: 0
+     tx_errors: 0
+     tx-0.packets: 5
+     tx-0.bytes: 702
+     tx-1.packets: 10
+     tx-1.bytes: 788
+     tx-2.packets: 0
+     tx-2.bytes: 0
+     tx-3.packets: 0
+     tx-3.bytes: 0
+     rx-0.packets: 0
+     rx-0.bytes: 0
+     rx-1.packets: 0
+     rx-1.bytes: 0
+     rx-2.packets: 5
+     rx-2.bytes: 1710
+     rx-3.packets: 0
+     rx-3.bytes: 0
